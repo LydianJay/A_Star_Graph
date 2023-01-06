@@ -22,26 +22,28 @@ import java.util.ArrayList;
 
 public class Render extends JPanel implements MouseListener, MouseMotionListener, KeyListener{
 	
-	private int m_width, m_height;
-	private float m_cameraX = 0, m_cameraY = 0;
-	private Image m_frontBuffer, m_backBuffer;
-	private final int m_nodeSize = 80; 
+	private int m_width, m_height;	// width and height of jpanel
+	private float m_cameraX = 0, m_cameraY = 0; // the camera position
+	private Image m_frontBuffer, m_backBuffer; // the front and back buffer for double buffering
+	private final int m_nodeSize = 80; 	// the size of each node in screen
 	private int m_mouseOldX, m_mouseOldY; // for tracking 
-	private int m_mouseX = 0, m_mouseY = 0;
-	private float m_dragSentivity = 0.6f;
+	private int m_mouseX = 0, m_mouseY = 0; // 
+	private float m_dragSentivity = 0.8f; //  the drag sentivity
 	
-	private int m_currentMouseKeyDragging;
+	private int m_currentMouseKeyDragging; // the current mouse button that is dragging
 	
-	private ArrayList<Node> m_nodes;
-	private Node m_currentActiveNode = null;
-	private Node m_currentSelectionNode = null;
-	private Node m_startNode = null;
-	private Node m_endNode = null;
+	private ArrayList<Node> m_nodes; // the list of existing nodes
+	private Node m_currentActiveNode = null; // the current active node
+	private Node m_currentSelectionNode = null; // the current selected node
+	private Node m_startNode = null; // the reference to the start node
+	private Node m_endNode = null; // the reference to the end node
 	
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L; // useless shit
 	
 	
-	public Render(int w, int h){
+	public Render(int w, int h){ // init jpanel and stuff
+		
+		
 		m_nodes = new ArrayList<Node>();
 		m_currentMouseKeyDragging = 0;
 		
@@ -49,8 +51,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		this.m_height = h;
 		setVisible(true);
 		setPreferredSize(new Dimension(m_width, m_height));
-		this.setBackground(new Color(0.5f, 0.5f,0.5f));
-		this.setForeground(getBackground());
+		
 		setDoubleBuffered(true);
 		setOpaque(true);
 	}
@@ -65,6 +66,9 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		g2.dispose();
 	}
 	
+	/*
+	 * The update function that updates everything
+	 */
 	public void update() {
 		
 		
@@ -72,13 +76,13 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 			m_backBuffer = createImage(m_width, m_height);
 			Graphics2D graphics = (Graphics2D)(m_backBuffer.getGraphics());
 			
-			graphics.setColor(Color.cyan);
+			
 			Image temp = m_backBuffer;
-			m_backBuffer = m_frontBuffer;
+			m_backBuffer = m_frontBuffer; // swap the front and back buffer
 			m_frontBuffer = temp;
 			
 			
-			drawNodes(graphics);
+			drawNodes(graphics); // render the buffer
 			
 			
 			repaint();
@@ -109,7 +113,9 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		
 	}
 	
-	
+	/*
+	 * checks if the position of the cursor is inside a node
+	 */
 	private boolean isCursorInsideCircle(int x, int y, int nX, int nY) {
 		
 		int s = m_nodeSize;
@@ -129,7 +135,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		// TODO Auto-generated method stub
 	
 		
-		if(e.getButton() == MouseEvent.BUTTON1) {
+		if(e.getButton() == MouseEvent.BUTTON1) { // if left click occured create a new node in a position if in that position no node exist
 			Point loc = e.getPoint();
 			
 			int x = (int) (loc.x - m_cameraX);
@@ -253,9 +259,12 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 				
 				if(isCursorInsideCircle(x, y, (int)(n.m_posX), (int)(n.m_posY) ) && n != m_currentSelectionNode) {
 					
-					m_currentSelectionNode.addConnection(n);
-					n.addConnection(m_currentSelectionNode);
-					m_currentSelectionNode = null;
+					if(m_currentSelectionNode != null) {
+						m_currentSelectionNode.addConnection(n);
+						n.addConnection(m_currentSelectionNode);
+						m_currentSelectionNode = null;
+					}
+					
 					return;
 				}
 			}
