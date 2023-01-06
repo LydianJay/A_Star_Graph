@@ -26,16 +26,18 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 	private float m_cameraX = 0, m_cameraY = 0;
 	private Image m_frontBuffer, m_backBuffer;
 	private final int m_nodeSize = 80; 
-	private int m_mouseOldX, m_mouseOldY;
-	private float m_dragSentivity = 0.4f;
+	private int m_mouseOldX, m_mouseOldY; // for tracking 
+	private int m_mouseX = 0, m_mouseY = 0;
+	private float m_dragSentivity = 0.6f;
+	
 	private int m_currentMouseKeyDragging;
 	
 	private ArrayList<Node> m_nodes;
 	private Node m_currentActiveNode = null;
 	private Node m_currentSelectionNode = null;
-	/**
-	 * 
-	 */
+	private Node m_startNode = null;
+	private Node m_endNode = null;
+	
 	private static final long serialVersionUID = 1L;
 	
 	
@@ -47,6 +49,8 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		this.m_height = h;
 		setVisible(true);
 		setPreferredSize(new Dimension(m_width, m_height));
+		this.setBackground(new Color(0.5f, 0.5f,0.5f));
+		this.setForeground(getBackground());
 		setDoubleBuffered(true);
 		setOpaque(true);
 	}
@@ -56,6 +60,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 	public void paintComponent(Graphics g) {
 		
 		Graphics2D g2 = (Graphics2D)g;
+		
 		g2.drawImage(m_frontBuffer, 0, 0,this);
 		g2.dispose();
 	}
@@ -66,6 +71,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		while(true) {
 			m_backBuffer = createImage(m_width, m_height);
 			Graphics2D graphics = (Graphics2D)(m_backBuffer.getGraphics());
+			
 			graphics.setColor(Color.cyan);
 			Image temp = m_backBuffer;
 			m_backBuffer = m_frontBuffer;
@@ -83,9 +89,23 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 	
 	private void drawNodes(Graphics2D g) {
 		
-		for(Node n : m_nodes) {
-			n.drawNode(g, (int)m_cameraX, (int)m_cameraY, m_nodeSize);
+		try {
+			
+			for(Node n : m_nodes) {
+				n.drawConnections(g, (int)m_cameraX, (int)m_cameraY, m_nodeSize);
+			}
+			
+			
+			for(Node n : m_nodes) {
+				n.drawNode(g, (int)m_cameraX, (int)m_cameraY, m_nodeSize);
+			}
+			
+			
 		}
+		catch(java.util.ConcurrentModificationException e) {
+			
+		}
+		
 		
 	}
 	
@@ -122,7 +142,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 				}
 			}
 			if(!alreadyExist)
-				m_nodes.add(new Node((float)x - (m_nodeSize / 2) , (float)y - m_nodeSize));
+				m_nodes.add(new Node((float)x - (m_nodeSize / 2) , (float)y - m_nodeSize, Node.TYPE_NODE));
 		}
 	}
 
@@ -185,6 +205,15 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 			if(n != null) {
 				n.m_posX = x - (m_nodeSize / 2);
 				n.m_posY = y - m_nodeSize;
+				n.updateDistance();
+				
+				
+				for(Node a : m_nodes) {
+					if(a != n) {
+						if(a.hasConnection(n))
+							a.updateDistance();
+					}
+				}
 			}
 			else{
 				m_cameraX -= (m_mouseOldX - x) * m_dragSentivity;
@@ -218,14 +247,29 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 			break;
 		case MouseEvent.BUTTON3:
 			
+			
+			
 			for(Node n : m_nodes) {
 				
 				if(isCursorInsideCircle(x, y, (int)(n.m_posX), (int)(n.m_posY) ) && n != m_currentSelectionNode) {
-					 
-					m_currentSelectionNode.addConnection(n);
 					
+					m_currentSelectionNode.addConnection(n);
+					n.addConnection(m_currentSelectionNode);
+					m_currentSelectionNode = null;
 					return;
 				}
+			}
+			
+			if(m_currentSelectionNode != null) { 
+				m_currentSelectionNode.clearConnections();
+				
+				for(int i = 0; i < m_nodes.size(); i++) {
+					if(m_currentSelectionNode != m_nodes.get(i)) {
+						m_nodes.get(i).removeConnection(m_currentSelectionNode);
+					}
+				}
+				
+				m_nodes.remove(m_currentSelectionNode);
 			}
 			
 			m_currentSelectionNode = null;
@@ -233,10 +277,22 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		}
 		
 		
-		
 
 	}
 
+	@Override
+	public void mouseMoved(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+		Point loc = e.getPoint();
+		
+		int x = (int) (loc.x - m_cameraX);
+		int y = (int) (loc.y - m_cameraY);
+		
+		m_mouseX = x;
+		m_mouseY = y;
+		
+	}
 
 
 	@Override
@@ -260,11 +316,6 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 
 
 
-	@Override
-	public void mouseMoved(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
 
 
 
@@ -279,20 +330,22 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 	@Override
 	public void keyPressed(KeyEvent e) {
 		// TODO Auto-generated method stub
-		
+		final float fScrollSpeed = 25;
 		switch(e.getKeyCode()) {
 		case KeyEvent.VK_A:
-			m_cameraX--;
+			m_cameraX -= fScrollSpeed * m_dragSentivity;
 			break;
 		case KeyEvent.VK_D:
-			m_cameraX++;
+			m_cameraX += fScrollSpeed * m_dragSentivity;
 			break;
 		case KeyEvent.VK_S:
-			m_cameraY++;
+			m_cameraY += fScrollSpeed * m_dragSentivity;
 			break;
 		case KeyEvent.VK_W:
-			m_cameraY--;
+			m_cameraY -= fScrollSpeed * m_dragSentivity;
 			break;
+
+
 		}
 		
 	}
@@ -301,7 +354,80 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		// TODO Auto-generated method stub
+		switch(e.getKeyCode()) {
+		
+		case KeyEvent.VK_Q: {
+			int x = m_mouseX, y = m_mouseY;
+			
+			boolean alreadyExist = false;
+			for(Node n : m_nodes) {
+				if(isCursorInsideCircle(x , y, (int)(n.m_posX), (int)(n.m_posY ) )) {
+					alreadyExist = true;
+					
+					if(m_startNode != null) {
+						m_startNode.setType(Node.TYPE_NODE);
+						
+					}
+					n.setType(Node.TYPE_START);
+					m_startNode = n;
+					m_startNode.setType(Node.TYPE_START);
+					
+					return;
+				}
+			}
+			if(!alreadyExist) {
+				
+				if(m_startNode != null) {
+					m_startNode.setType(Node.TYPE_NODE);
+					
+				}
+				Node n = new Node((float)x - (m_nodeSize / 2) , (float)y - m_nodeSize, Node.TYPE_START);
+				m_startNode = n;
+				m_nodes.add(n);
+				
+				
+			}
+				
+		}
+			
+			break;
+		case KeyEvent.VK_E:{
+			int x = m_mouseX, y = m_mouseY;
+			
+			boolean alreadyExist = false;
+			for(Node n : m_nodes) {
+				if(isCursorInsideCircle(x , y, (int)(n.m_posX), (int)(n.m_posY ) )) {
+					alreadyExist = true;
+					
+					if(m_endNode != null) {
+						m_endNode.setType(Node.TYPE_NODE);
+						
+					}
+					n.setType(Node.TYPE_END);
+					m_endNode = n;
+					m_endNode.setType(Node.TYPE_END);
+					
+					
+					return;
+				}
+			}
+			if(!alreadyExist) {
+				
+				if(m_endNode != null) {
+					m_endNode.setType(Node.TYPE_NODE);
+					
+				}
+				Node n = new Node((float)x - (m_nodeSize / 2) , (float)y - m_nodeSize, Node.TYPE_END);
+				m_endNode = n;
+				m_nodes.add(n);
+			}
+			
+			
+			
+		}
+			
+			break;
+		}
 		
 	}
 	
