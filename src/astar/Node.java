@@ -7,49 +7,105 @@ import java.awt.Graphics2D;
 import java.awt.Stroke;
 import java.util.ArrayList;
 
-import java.util.Random;
+
 public class Node {
 	
-	public static final int TYPE_NODE = 0, TYPE_START = 2, TYPE_END = 3;
+	public static final int TYPE_NODE = 0, TYPE_START = 2, TYPE_END = 3, TYPE_PATH = 4; // the type constant
+	
+	// -- Stuff use in the a star algorithm
+	private float m_heuristic = 0;
+	private float m_fCost = Float.MAX_VALUE;
+	private float m_gCost = 0;
+	private Node m_parentNode = null;
+	// ----------------------
 	
 	
-	private float m_heuristic;
-	public String m_label;
-	public float m_posX, m_posY;
+	public float m_posX, m_posY; 											// position of the node in the world
 	
-	public int m_type;
+	public int m_type; 														// what type of nodes specified by TYPE_NODE, TYPE_START...
 	private ArrayList<Node> m_connections;
-	private HashMap<Node, Float> m_distances = new HashMap<Node, Float>();
-	public Color m_color;
+	private HashMap<Node, Float> m_distances = new HashMap<Node, Float>(); 	// the hashmap that contains the distances of each connections of this node
+	public Color m_color;													// color of the node this might differ by the type... probably redundant variable
 	public Node(){
 		m_connections = new ArrayList<Node>();
 		
-		m_label = "NoLabel";
+		
 		m_posX = 0;
 		m_posY = 0;
 		m_type = TYPE_NODE;
-		/*Random random = new Random(System.currentTimeMillis());
-		float r = random.nextFloat(0.3f, 1);
-		float g = random.nextFloat(0.3f, 1);
-		float b = random.nextFloat(0.3f, 1);
-		m_color = new Color(r, g, b);*/
+		
 	}
 	
 	public Node(float x, float y, int type) {
 		m_connections = new ArrayList<Node>();
-		m_label = "NoLabel";
+		
 		m_posX = x;
 		m_posY = y;
 		m_type = type;
-		/*Random random = new Random(System.currentTimeMillis());
-		float r = random.nextFloat(0.3f, 1);
-		float g = random.nextFloat(0.3f, 1);
-		float b = random.nextFloat(0.3f, 1);
-		m_color = new Color(r, g, b);*/
+		
 	}
 	
+	public Node getParentNode() {
+		return m_parentNode;
+	}
+
+	public void setParentNode(Node m_parentNode) {
+		this.m_parentNode = m_parentNode;
+	}
+	
+	public void setGCost(float gCost) {
+		m_gCost = gCost;
+	}
+	
+	void updateFCost() {
+		m_fCost = m_gCost + m_heuristic;
+	}
+	
+	public float getFCost() {
+		return m_fCost;
+	}
+	
+	public float getGCost() {
+		return m_gCost;
+	}
+	
+	public void calculateHeuristic(Node n) {
+		
+		// calculate the distance from the end node to this node
+		// n = end node
+		if(this == n) {
+			m_heuristic = 0;
+			return;
+		}
+		
+		int x1 = (int) m_posX, y1 = (int) m_posY;
+		int x2 = (int) n.m_posX, y2 = (int) n.m_posY;
+		
+		m_heuristic = (float) Math.sqrt( Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2) ); // euclidean distance
+		
+	}
+
 	public void setHeuristic(float h) { m_heuristic = h; }
 	public float getHeuristic() { return m_heuristic; }
+	
+	
+	public float getDistanceFromStartNode(Node start) {
+		
+		Node n = start;
+		int x1 = (int) m_posX, y1 = (int) m_posY;
+		int x2 = (int) n.m_posX, y2 = (int) n.m_posY;
+		return (float) Math.sqrt( Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2) );
+	}
+	
+	
+	public  ArrayList<Node> getConnections() {
+		return m_connections;
+	}
+	
+	public float getDistanceFromNode(Node n) {
+		return m_distances.get(n);
+	}
+	
 	
 	public void addConnection(Node n) {
 		if(!m_connections.contains(n)) {
@@ -65,7 +121,11 @@ public class Node {
 	}
 	
 	public void updateDistance() {
-		
+		/*
+		 * This method is called as the nodes is drag around the world
+		 * its position will change does all of its the distance for each connections needs to be updated
+		 * 
+		 */
 		for(int i = 0; i < m_connections.size(); i++) {
 			Node n = m_connections.get(i);
 			int x1 = (int) m_posX, y1 = (int) m_posY;
@@ -83,6 +143,11 @@ public class Node {
 	public int getType() { return m_type; }
 	
 	public void drawNode(Graphics2D g, int cameraX, int cameraY, int nodeSize) {
+		
+		/*
+		 * Draws the node with corresponding color that differs for each type
+		 * 
+		 */
 		try {
 			
 			switch(m_type) {
@@ -94,6 +159,9 @@ public class Node {
 				break;
 			case TYPE_END:
 				g.setColor(Color.red);
+				break;
+			case TYPE_PATH:
+				g.setColor(Color.BLUE);
 				break;
 			}
 			
@@ -119,6 +187,11 @@ public class Node {
 	}
 	
 	public void drawConnections(Graphics2D g,int cameraX, int cameraY, int nodeSize) {
+		
+		/*
+		 * Draws the lines/connections to each node connected
+		 */
+		
 		try {
 			
 			Stroke oldStroke = g.getStroke();
@@ -133,8 +206,45 @@ public class Node {
 				int x3 = (int)((x1 + x2) / 2);
 				int y3 = (int)((y1 + y2) / 2);
 				
-				g.setColor(Color.black);
+				
+				
+				switch(n.m_type) {
+				
+				case TYPE_PATH:
+					g.setColor(Color.green);
+					
+					
+					break;
+					
+				case TYPE_END:
+					if(m_type == TYPE_PATH)
+						g.setColor(Color.green);
+					else
+						g.setColor(Color.black);
+					break;
+				case TYPE_START:
+					if(m_type == TYPE_PATH)
+						g.setColor(Color.green);
+					else
+						g.setColor(Color.black);
+					break;
+				
+					
+				default:
+					g.setColor(Color.black);
+					break;
+				}
+				
+				
+				if(m_type != TYPE_PATH) {
+					g.setColor(Color.black);
+				}
+				
+				
+				
 				g.drawLine(x1, y1, x2, y2);
+				
+				
 				g.setColor(Color.MAGENTA);
 				g.drawString(Float.toString(m_distances.get(n)), x3, y3);
 				

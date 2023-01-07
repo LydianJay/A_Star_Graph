@@ -19,6 +19,7 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseMotionListener;
 import astar.Node;
 import java.util.ArrayList;
+import astar.Algorithm;
 
 public class Render extends JPanel implements MouseListener, MouseMotionListener, KeyListener{
 	
@@ -37,7 +38,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 	private Node m_currentSelectionNode = null; // the current selected node
 	private Node m_startNode = null; // the reference to the start node
 	private Node m_endNode = null; // the reference to the end node
-	
+	private Algorithm algo = new Algorithm();
 	private static final long serialVersionUID = 1L; // useless shit
 	
 	
@@ -62,7 +63,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		
 		Graphics2D g2 = (Graphics2D)g;
 		
-		g2.drawImage(m_frontBuffer, 0, 0,this);
+		g2.drawImage(m_frontBuffer, 0, 0,this); // draw the front buffer
 		g2.dispose();
 	}
 	
@@ -85,7 +86,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 			drawNodes(graphics); // render the buffer
 			
 			
-			repaint();
+			repaint(); // update the screen
 		
 			
 		}
@@ -94,12 +95,12 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 	private void drawNodes(Graphics2D g) {
 		
 		try {
-			
+			//draws the connections/lines first
 			for(Node n : m_nodes) {
 				n.drawConnections(g, (int)m_cameraX, (int)m_cameraY, m_nodeSize);
 			}
 			
-			
+			//draws the nodes last
 			for(Node n : m_nodes) {
 				n.drawNode(g, (int)m_cameraX, (int)m_cameraY, m_nodeSize);
 			}
@@ -119,7 +120,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 	private boolean isCursorInsideCircle(int x, int y, int nX, int nY) {
 		
 		int s = m_nodeSize;
-		
+		// AABB collision detection
 		if(x >= nX && x <= nX + s + (s/16) && y >= nY && y <= nY + s + (s/2)) {
 			return true;
 		}
@@ -132,10 +133,10 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		// TODO Auto-generated method stub
+		
 	
 		
-		if(e.getButton() == MouseEvent.BUTTON1) { // if left click occured create a new node in a position if in that position no node exist
+		if(e.getButton() == MouseEvent.BUTTON1) { // if left click occurred create a new node in a position if in that position no node exist
 			Point loc = e.getPoint();
 			
 			int x = (int) (loc.x - m_cameraX);
@@ -163,7 +164,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		m_currentMouseKeyDragging = e.getButton();
 		switch(e.getButton()) {
 			
-		case MouseEvent.BUTTON1: 
+		case MouseEvent.BUTTON1:  // if left click is pressed it will select the node for dragging
 			
 			
 			m_mouseOldX = x;
@@ -178,7 +179,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		
 			break;
 			// ------------------------------------
-		case MouseEvent.BUTTON3: 
+		case MouseEvent.BUTTON3: // if right click is pressed we select the node that will have a connection or be deleted
 			
 			
 			for(Node n : m_nodes) {
@@ -206,15 +207,15 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		
 		switch(m_currentMouseKeyDragging) {
 		case MouseEvent.BUTTON1:
-			Node n = m_currentActiveNode;
+			Node n = m_currentActiveNode; // the node that was pressed 
 			
 			if(n != null) {
-				n.m_posX = x - (m_nodeSize / 2);
+				n.m_posX = x - (m_nodeSize / 2);	// update the position of the node
 				n.m_posY = y - m_nodeSize;
-				n.updateDistance();
+				n.updateDistance(); 
 				
 				
-				for(Node a : m_nodes) {
+				for(Node a : m_nodes) {// update the distance for each of its connections 
 					if(a != n) {
 						if(a.hasConnection(n))
 							a.updateDistance();
@@ -249,11 +250,14 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		switch(e.getButton()) {
 		case MouseEvent.BUTTON1:
 			
-			m_currentActiveNode = null;
+			m_currentActiveNode = null; // left click was released the currentActiveNode or dragging node will be released
 			break;
 		case MouseEvent.BUTTON3:
 			
-			
+			/*
+			 * If right click is released and there is a node in the cursor it will add that connection
+			 * 
+			 */
 			
 			for(Node n : m_nodes) {
 				
@@ -263,11 +267,16 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 						m_currentSelectionNode.addConnection(n);
 						n.addConnection(m_currentSelectionNode);
 						m_currentSelectionNode = null;
+						return;
 					}
 					
-					return;
+					
 				}
 			}
+			
+			/*
+			 * if no node was in the cursor position the node that was held previously will be deleted
+			 */
 			
 			if(m_currentSelectionNode != null) { 
 				m_currentSelectionNode.clearConnections();
@@ -298,7 +307,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		int x = (int) (loc.x - m_cameraX);
 		int y = (int) (loc.y - m_cameraY);
 		
-		m_mouseX = x;
+		m_mouseX = x; // save mouse posistion for later use
 		m_mouseY = y;
 		
 	}
@@ -339,8 +348,10 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 	@Override
 	public void keyPressed(KeyEvent e) {
 		// TODO Auto-generated method stub
-		final float fScrollSpeed = 25;
+		final float fScrollSpeed = 30;
 		switch(e.getKeyCode()) {
+		
+		// ---------- Scrolling with WASD keys -----------------
 		case KeyEvent.VK_A:
 			m_cameraX -= fScrollSpeed * m_dragSentivity;
 			break;
@@ -352,6 +363,37 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 			break;
 		case KeyEvent.VK_W:
 			m_cameraY -= fScrollSpeed * m_dragSentivity;
+			break;
+		// ---------- Scrolling with WASD keys -----------------
+		
+		
+		case KeyEvent.VK_SPACE: // reset and start the a star algorithm 
+			
+			
+			if(m_startNode != null && m_endNode != null) {
+				
+				algo.reset();
+				
+				for(Node n : m_nodes) {
+					if(n.getType() == Node.TYPE_PATH )
+						n.setType(Node.TYPE_NODE);
+					n.setParentNode(null);
+				}
+				
+				
+				algo.initAlgorithm(m_nodes, m_startNode, m_endNode);
+				algo.runAStarAlgorithm();
+			}
+			
+			break;
+		case KeyEvent.VK_ESCAPE: // reset a star algorithm
+			algo.reset();
+			for(Node n : m_nodes) {
+				if(n.getType() == Node.TYPE_PATH )
+					n.setType(Node.TYPE_NODE);
+				
+				n.setParentNode(null);
+			}
 			break;
 
 
