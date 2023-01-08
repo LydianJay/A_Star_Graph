@@ -1,16 +1,18 @@
 package rendering;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
+import java.awt.Stroke;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
 import javax.swing.JPanel;
-
+import javax.swing.JTextField;
 
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -52,6 +54,9 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		this.m_height = h;
 		setVisible(true);
 		setPreferredSize(new Dimension(m_width, m_height));
+		
+		
+		
 		
 		setDoubleBuffered(true);
 		setOpaque(true);
@@ -106,6 +111,20 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 			}
 			
 			
+			if(m_currentSelectionNode != null) {
+				
+				Node n = m_currentSelectionNode;
+				int x = (int)(n.m_posX + m_cameraX) + m_nodeSize/2;
+				int y = (int)(n.m_posY + m_cameraY) + m_nodeSize/2;
+				int x2 = (int)( m_mouseX + m_cameraX);
+				int y2 = (int)(m_mouseY + m_cameraY);
+				Stroke oldStroke = g.getStroke();
+				g.setStroke(new BasicStroke(10));
+				g.drawLine(x , y, x2, y2);
+				g.setStroke(oldStroke);
+				
+			}
+			
 		}
 		catch(java.util.ConcurrentModificationException e) {
 			
@@ -124,8 +143,6 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		if(x >= nX && x <= nX + s + (s/16) && y >= nY && y <= nY + s + (s/2)) {
 			return true;
 		}
-	
-		
 		return false;
 		
 	}
@@ -203,7 +220,8 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		
 		int x = (int) (loc.x - m_cameraX);
 		int y = (int) (loc.y - m_cameraY);
-		
+		m_mouseX = x;
+		m_mouseY = y;
 		
 		switch(m_currentMouseKeyDragging) {
 		case MouseEvent.BUTTON1:

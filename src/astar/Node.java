@@ -26,6 +26,8 @@ public class Node {
 	private ArrayList<Node> m_connections;
 	private HashMap<Node, Float> m_distances = new HashMap<Node, Float>(); 	// the hashmap that contains the distances of each connections of this node
 	public Color m_color;													// color of the node this might differ by the type... probably redundant variable
+	
+	
 	public Node(){
 		m_connections = new ArrayList<Node>();
 		
@@ -137,9 +139,7 @@ public class Node {
 		
 	}
 	
-	public void setType(int type) {
-		m_type = type;
-	}
+	public void setType(int type) { m_type = type; }
 	public int getType() { return m_type; }
 	
 	public void drawNode(Graphics2D g, int cameraX, int cameraY, int nodeSize) {
@@ -212,8 +212,6 @@ public class Node {
 				
 				case TYPE_PATH:
 					g.setColor(Color.green);
-					
-					
 					break;
 					
 				case TYPE_END:
@@ -236,9 +234,12 @@ public class Node {
 				}
 				
 				
-				if(m_type != TYPE_PATH) {
+				if(m_type == TYPE_NODE) {
 					g.setColor(Color.black);
 				}
+				
+				
+				
 				
 				
 				
