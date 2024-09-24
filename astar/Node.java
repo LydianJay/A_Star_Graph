@@ -186,7 +186,7 @@ public class Node {
 		m_distances.remove(n);
 	}
 	
-	public void drawConnections(Graphics2D g,int cameraX, int cameraY, int nodeSize) {
+	public void drawConnections(Graphics2D g,int cameraX, int cameraY, int nodeSize, float zoom) {
 		
 		/*
 		 * Draws the lines/connections to each node connected
@@ -195,16 +195,17 @@ public class Node {
 		try {
 			
 			Stroke oldStroke = g.getStroke();
-			g.setStroke(new BasicStroke(10));
+			g.setStroke(new BasicStroke(5 * zoom));
 			g.setColor(Color.black);
 			
+			
 			for(Node n : m_connections) {
-				int x1 = (int)(m_posX + cameraX) + nodeSize/2;
-				int y1 = (int)(m_posY + cameraY) + nodeSize/2;
-				int x2 = (int)(n.m_posX + cameraX) + nodeSize/2;
-				int y2 = (int)(n.m_posY + cameraY) + nodeSize/2;
-				int x3 = (int)((x1 + x2) / 2);
-				int y3 = (int)((y1 + y2) / 2);
+				int x1 = (int)((m_posX + cameraX) + nodeSize/2.0f * zoom);
+				int y1 = (int)((m_posY + cameraY) + nodeSize/2.0f * zoom);
+				int x2 = (int)((n.m_posX + cameraX) + nodeSize/2.0f * zoom);
+				int y2 = (int)((n.m_posY + cameraY) + nodeSize/2.0f * zoom);
+				int x3 = (int)((x1 + x2) / 2.0f);
+				int y3 = (int)((y1 + y2) / 2.0f);
 				
 				
 				

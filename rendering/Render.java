@@ -32,7 +32,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 	private int m_mouseOldX, m_mouseOldY; // for tracking 
 	private int m_mouseX = 0, m_mouseY = 0; // 
 	private float m_dragSentivity = 0.8f; //  the drag sentivity
-	
+	private float m_zoom = 1.0f;
 	private int m_currentMouseKeyDragging; // the current mouse button that is dragging
 	
 	private ArrayList<Node> m_nodes; // the list of existing nodes
@@ -106,25 +106,25 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		try {
 			//draws the connections/lines first
 			for(Node n : m_nodes) {
-				n.drawConnections(g, (int)m_cameraX, (int)m_cameraY, m_nodeSize);
+				n.drawConnections(g, (int)m_cameraX, (int)m_cameraY, (int)(m_nodeSize), m_zoom);
 			}
 			
 			//draws the nodes last
 			for(Node n : m_nodes) {
-				n.drawNode(g, (int)m_cameraX, (int)m_cameraY, m_nodeSize);
+				n.drawNode(g, (int)m_cameraX, (int)m_cameraY, (int)(m_nodeSize * m_zoom));
 			}
 			
 			
 			if(m_currentSelectionNode != null) {
 				
 				Node n = m_currentSelectionNode;
-				int x = (int)(n.m_posX + m_cameraX) + m_nodeSize/2;
-				int y = (int)(n.m_posY + m_cameraY) + m_nodeSize/2;
-				int x2 = (int)( m_mouseX + m_cameraX);
-				int y2 = (int)(m_mouseY + m_cameraY);
+				int x = (int) ((float)(n.m_posX + m_cameraX) + (float)m_nodeSize/2.0f * m_zoom);
+				int y = (int) ((float)(n.m_posY + m_cameraY) + (float)m_nodeSize/2.0f * m_zoom) ;
+				int x2 = (int) ((float)((m_zoom/2.0) * m_mouseX + m_cameraX) );
+				int y2 = (int) ((float)((m_zoom/2.0) * m_mouseY + m_cameraY) );
 				Stroke oldStroke = g.getStroke();
-				g.setStroke(new BasicStroke(10));
-				g.drawLine(x , y, x2, y2);
+				g.setStroke(new BasicStroke(5 * m_zoom));
+				g.drawLine(x ,y, x2, y2);
 				g.setStroke(oldStroke);
 				
 			}
@@ -142,7 +142,7 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 	 */
 	private boolean isCursorInsideCircle(int x, int y, int nX, int nY) {
 		
-		int s = m_nodeSize;
+		int s = (int)((float)m_nodeSize * m_zoom);
 		// AABB collision detection
 		if(x >= nX && x <= nX + s + (s/16) && y >= nY && y <= nY + s + (s/2)) {
 			return true;
@@ -160,8 +160,8 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		if(e.getButton() == MouseEvent.BUTTON1) { // if left click occurred create a new node in a position if in that position no node exist
 			Point loc = e.getPoint();
 			
-			int x = (int) (loc.x - m_cameraX);
-			int y = (int) (loc.y - m_cameraY);
+			int x = (int) ( ((float)loc.x - m_cameraX) );
+			int y = (int) ( ((float)loc.y - m_cameraY));
 			boolean alreadyExist = false;
 			for(Node n : m_nodes) {
 				if(isCursorInsideCircle(x , y, (int)(n.m_posX), (int)(n.m_posY ) )) {
@@ -180,8 +180,8 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 	public void mousePressed(MouseEvent e) {
 		Point loc = e.getPoint();
 		doUpdate = true;
-		int x = (int) (loc.x - m_cameraX);
-		int y = (int) (loc.y - m_cameraY);
+		int x = (int) ( ((float)loc.x - m_cameraX) );
+		int y = (int) ( ((float)loc.y - m_cameraY) );
 		m_currentMouseKeyDragging = e.getButton();
 		switch(e.getButton()) {
 			
@@ -222,8 +222,8 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		// TODO Auto-generated method stub
 		Point loc = e.getPoint();
 		doUpdate = true;
-		int x = (int) (loc.x - m_cameraX);
-		int y = (int) (loc.y - m_cameraY);
+		int x = (int) ( ((float)loc.x - m_cameraX));
+		int y = (int) ( ((float)loc.y - m_cameraY));
 		m_mouseX = x;
 		m_mouseY = y;
 		
@@ -266,8 +266,8 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 		
 		Point loc = e.getPoint();
 		doUpdate = true;
-		int x = (int) (loc.x - m_cameraX);
-		int y = (int) (loc.y - m_cameraY);
+		int x = (int) ( ((float)loc.x - m_cameraX));
+		int y = (int) ( ((float)loc.y - m_cameraY));
 		
 		switch(e.getButton()) {
 		case MouseEvent.BUTTON1:
@@ -417,6 +417,16 @@ public class Render extends JPanel implements MouseListener, MouseMotionListener
 				
 				n.setParentNode(null);
 			}
+			break;
+			
+		case KeyEvent.VK_UP:
+			m_zoom += 0.1;
+			System.out.println("zoom +" + String.valueOf(m_zoom));
+			break;
+			
+		case KeyEvent.VK_DOWN:
+			m_zoom -= 0.1;
+			System.out.println("zoom -" + String.valueOf(m_zoom));
 			break;
 
 
